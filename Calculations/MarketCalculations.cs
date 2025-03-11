@@ -14,35 +14,14 @@ public class MarketCalculations
         "Consumer Defensive", "Energy", "Basic Materials",
         "Real Estate", "Utilities"
     };
-    public DateTime DaysStartRun { get; set; }
-    public DateTime DaysAgo30Date { get; set; }
-    public DateTime DaysAgo90Date { get; set; }
-    public DateTime DaysAgo180Date { get; set; }
-    public DateTime DaysAgo365Date { get; set; }
-    public DateTime DaysAgo1095Date { get; set; }
-
-    // Data lists for each period.
-    public List<double> Sectors30Data { get; set; }
-    public List<double> Sectors90Data { get; set; }
-    public List<double> Sectors365Data { get; set; }
-    public List<double> Sectors1095Data { get; set; }
+    public DateTime daysStartRun { get; set; }
     public DataReader dataReader { get; set; }
 
     public MarketCalculations(DateTime daysStartRun)
     {
         dataReader = new DataReader();
 
-        DaysStartRun = daysStartRun;
-        DaysAgo30Date = DateAdjuster.AdjustWeekendAndHolidays(daysStartRun.AddDays(-30));
-        DaysAgo90Date = DateAdjuster.AdjustWeekendAndHolidays(daysStartRun.AddDays(-90));
-        DaysAgo180Date = DateAdjuster.AdjustWeekendAndHolidays(daysStartRun.AddDays(-180));
-        DaysAgo365Date = DateAdjuster.AdjustWeekendAndHolidays(daysStartRun.AddDays(-365));
-        DaysAgo1095Date = DateAdjuster.AdjustWeekendAndHolidays(daysStartRun.AddDays(-1095));
-
-        Sectors30Data = new List<double>();
-        Sectors90Data = new List<double>();
-        Sectors365Data = new List<double>();
-        Sectors1095Data = new List<double>();
+        this.daysStartRun = daysStartRun;
     }
 
     public List<double> GetRollingPercent(int daysAgo)
@@ -50,35 +29,8 @@ public class MarketCalculations
         List<double> sectorPercents = new List<double>();
         DateTime startDate, endDate;
 
-        if (daysAgo == 30)
-        {
-            startDate = DaysAgo30Date;
-            endDate = DaysStartRun;
-        }
-        else if (daysAgo == 90)
-        {
-            startDate = DaysAgo90Date;
-            endDate = DaysStartRun;
-        }
-        else if (daysAgo == 180)
-        {
-            startDate = DaysAgo180Date;
-            endDate = DaysStartRun;
-        }
-        else if (daysAgo == 365)
-        {
-            startDate = DaysAgo365Date;
-            endDate = DaysStartRun;
-        }
-        else if (daysAgo == 1095)
-        {
-            startDate = DaysAgo1095Date;
-            endDate = DaysStartRun;
-        }
-        else
-        {
-            throw new ArgumentException("Unsupported daysAgo value.");
-        }
+        endDate = daysStartRun;
+        startDate = DateAdjuster.AdjustWeekendAndHolidays(daysStartRun.AddDays(-daysAgo));
 
         foreach (var sector in SectorNames)
         {
@@ -113,9 +65,9 @@ public class MarketCalculations
 
 
     // This method builds a dictionary mapping each sector to a dictionary of percent values.
-    public Dictionary<string, PercentReturnsModel> MarketPercents()
+    public Dictionary<string, SectorPercentReturnsModel> MarketPercents()
     {
-        Dictionary<string, PercentReturnsModel> percentDict = new Dictionary<string, PercentReturnsModel>();
+        Dictionary<string, SectorPercentReturnsModel> percentDict = new Dictionary<string, SectorPercentReturnsModel>();
 
         List<double> day30 = GetRollingPercent(30);
         List<double> day90 = GetRollingPercent(90);
@@ -125,7 +77,7 @@ public class MarketCalculations
         for (int sectorIndex = 0; sectorIndex < SectorNames.Count; sectorIndex++)
         {
             string name = SectorNames[sectorIndex];
-            percentDict[name] = new PercentReturnsModel(day30[sectorIndex], day90[sectorIndex], day365[sectorIndex], day1095[sectorIndex]);
+            percentDict[name] = new SectorPercentReturnsModel(day30[sectorIndex], day90[sectorIndex], day365[sectorIndex], day1095[sectorIndex]);
         }
         return percentDict;
     }

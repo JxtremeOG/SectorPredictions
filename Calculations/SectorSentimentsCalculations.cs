@@ -13,8 +13,8 @@ public class SectorSentimentsCalculations {
 
     public Tuple<string, string> lastQuarterDate { get; set; }
     public Tuple<string, string> lastYearDate { get; set; }
-    public SectorSentimentModel lastQuarterData { get; set; }
-    public SectorSentimentModel lastYearData { get; set; }
+    public SentimentsModel lastQuarterData { get; set; }
+    public SentimentsModel lastYearData { get; set; }
     public SectorSentimentsCalculations(Tuple<string, string> quarterPassed) {
         dataReader = new DataReader();
         quarterToPredict = quarterPassed;
@@ -23,23 +23,23 @@ public class SectorSentimentsCalculations {
         lastYearDate = DateAdjuster.SubtractQuarters(quarterPassed, 4);
     }
 
-    public Dictionary<string, SentimentsModel> SectorSentiments() {
-        Dictionary<string, SentimentsModel> sentimentsDict = new Dictionary<string, SentimentsModel>();
+    public Dictionary<string, SectorSentimentModel> SectorSentiments() {
+        Dictionary<string, SectorSentimentModel> sentimentsDict = new Dictionary<string, SectorSentimentModel>();
 
-        List<SectorSentimentModel> lastQuarter = GetSectorSentiments(lastQuarterDate);
-        List<SectorSentimentModel> lastYear = GetSectorSentiments(lastYearDate);
+        List<SentimentsModel> lastQuarter = GetSectorSentiments(lastQuarterDate);
+        List<SentimentsModel> lastYear = GetSectorSentiments(lastYearDate);
 
         for (int sectorIndex = 0; sectorIndex < SectorNames.Count; sectorIndex++)
         {
             string name = SectorNames[sectorIndex];
-            sentimentsDict[name] = new SentimentsModel(lastQuarter[sectorIndex], lastYear[sectorIndex]);
+            sentimentsDict[name] = new SectorSentimentModel(lastQuarter[sectorIndex], lastYear[sectorIndex]);
         }
         return sentimentsDict;
     }
 
-    public List<SectorSentimentModel> GetSectorSentiments(Tuple<string, string> quarterYear)
+    public List<SentimentsModel> GetSectorSentiments(Tuple<string, string> quarterYear)
     {
-        List<SectorSentimentModel> sentiments = new List<SectorSentimentModel>();
+        List<SentimentsModel> sentiments = new List<SentimentsModel>();
 
         for (int sectorIndex = 0; sectorIndex < SectorNames.Count; sectorIndex++)
         {
@@ -50,7 +50,7 @@ public class SectorSentimentsCalculations {
         return sentiments;
     }
 
-    public SectorSentimentModel GetSectorSentimentModel(Tuple<string, string> quarterYear, string sector)
+    public SentimentsModel GetSectorSentimentModel(Tuple<string, string> quarterYear, string sector)
     {
         // Get the DataTable using your existing method.
         DataTable dt = dataReader.GetSectorSentiment(quarterYear, sector);
@@ -58,7 +58,7 @@ public class SectorSentimentsCalculations {
         // If no data is returned, return a default model.
         if (dt.Rows.Count == 0)
         {
-            return new SectorSentimentModel(0, 0, 0, 0.0);
+            return new SentimentsModel(0, 0, 0, 0.0);
         }
 
         // Assuming the query returns only one row per sector/quarter,
@@ -72,7 +72,7 @@ public class SectorSentimentsCalculations {
         double sentimentScore = row["SENTIMENT_SCORE"] != DBNull.Value ? Convert.ToDouble(row["SENTIMENT_SCORE"]) : 0.0;
 
         // Create and return the SectorSentimentModel.
-        return new SectorSentimentModel(totalPositive, totalNegative, totalNeutral, sentimentScore);
+        return new SentimentsModel(totalPositive, totalNegative, totalNeutral, sentimentScore);
     }
 
 

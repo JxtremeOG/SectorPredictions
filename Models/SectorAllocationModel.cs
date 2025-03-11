@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public class SectorAllocationModel {
+public class SectorAllocationModel : IIndividual<SectorAllocationModel>{
     public static List<string> SectorNames = new List<string> {
         "Technology",
         "Financial Services",
@@ -18,13 +18,11 @@ public class SectorAllocationModel {
     };
 
     private List<double> Allocations { get; set; } = new List<double>();
+    public double Fitness { get; set; } = 0.0;
     public int SectorAllocationCount;
-    public double Fitness;
 
     public SectorAllocationModel() {
         this.SectorAllocationCount = SectorNames.Count;
-        // Initialize with zeros for each sector.
-        this.Fitness = 0.0;
     }
 
     public void SetAllocations(List<double> allocations) {
@@ -74,5 +72,10 @@ public class SectorAllocationModel {
             rounded[maxIndex] = Math.Round(rounded[maxIndex] + diff, 2);
         }
         this.Allocations = rounded;
+    }
+
+    public SectorAllocationModel Clone()
+    {
+        throw new NotImplementedException();
     }
 }

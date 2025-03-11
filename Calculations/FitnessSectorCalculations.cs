@@ -31,8 +31,8 @@ public class FitnessSectorCalculations
     private double minAllocation = 0.1;
 
     // Dictionaries from market calculations and sector sentiments.
-    private Dictionary<string, PercentReturnsModel> marketPercents;
-    private Dictionary<string, SentimentsModel> sentimentDict;
+    private Dictionary<string, SectorPercentReturnsModel> marketPercents;
+    private Dictionary<string, SectorSentimentModel> sentimentDict;
 
     // Constructor. The parameter daysStartRun is expected to be a DateTime.
     public FitnessSectorCalculations(Tuple<string, string> quarterToPredict, double day30Weight, double day90Weight, double day365Weight, double day1095Weight
