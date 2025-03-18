@@ -116,7 +116,7 @@ public class DataReader {
         return result;
     }
 
-    public void InsertNewsData(string sector, string individualTicker, QuarterRangeModel quarter, Dictionary<string, double> stockSentiment) {
+    public void InsertNewsData(string sector, string individualTicker, QuarterRangeRecord quarter, Dictionary<string, double> stockSentiment) {
         sqlite.Open();
         try {
             using (var insertDataCommand = new SqliteCommand(@"

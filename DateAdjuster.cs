@@ -20,6 +20,43 @@ public class DateAdjuster
         return Tuple.Create("Q" + newQuarter.ToString(), newYear.ToString());
     }
 
+    public static List<QuarterRangeRecord> GetQuarterRange(QuarterRangeRecord startQuarter, QuarterRangeRecord endQuarter)
+    {
+        List<QuarterRangeRecord> quarters = new List<QuarterRangeRecord>();
+
+        // Parse the start and end years and quarters
+        int startYear = int.Parse(startQuarter.Year);
+        int startQ = int.Parse(startQuarter.Quarter.Substring(1)); // Convert "Q1" -> 1
+
+        int endYear = int.Parse(endQuarter.Year);
+        int endQ = int.Parse(endQuarter.Quarter.Substring(1)); // Convert "Q3" -> 3
+
+        // Convert to a zero-based total quarter index
+        int startIndex = startYear * 4 + (startQ - 1);
+        int endIndex = endYear * 4 + (endQ - 1);
+
+        // Ensure the start is before or equal to the end
+        if (startIndex > endIndex)
+        {
+            throw new ArgumentException("Start quarter must be before or equal to the end quarter.");
+        }
+
+        // Iterate through the quarter indices and construct the QuarterRangeRecord objects
+        for (int index = startIndex; index <= endIndex; index++)
+        {
+            int year = index / 4; // Get year
+            int quarter = (index % 4) + 1; // Get quarter (convert from zero-based)
+
+            quarters.Add(new QuarterRangeRecord
+            {
+                Quarter = $"Q{quarter}",
+                Year = year.ToString()
+            });
+        }
+
+        return quarters;
+    }
+
 
     public static DateTime QuarterStartDate(Tuple<string, string> quarter)
     {
@@ -32,6 +69,22 @@ public class DateAdjuster
         // Return the start date of the quarter.
         return new DateTime(year, startMonth, 1);
     }
+
+    public static DateTime QuarterEndDate(Tuple<string, string> quarter)
+    {
+        int quarterNumber = int.Parse(quarter.Item1.Substring(1)); // Extracts "4" from "Q4"
+        int year = int.Parse(quarter.Item2);
+
+        // Calculate the end month of the quarter.
+        int endMonth = quarterNumber * 3;
+
+        // Get the last day of that month.
+        int lastDay = DateTime.DaysInMonth(year, endMonth);
+
+        // Return the end date of the quarter.
+        return new DateTime(year, endMonth, lastDay);
+    }
+
 
     public static Tuple<string, string> DateToQuarter(DateTime runDate) {
 

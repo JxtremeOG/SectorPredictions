@@ -24,9 +24,9 @@ public class StockNews
     }
 
     // Generate a list of quarter ranges between dateStart and dateEnd.
-    public List<QuarterRangeModel> GetQuarterRanges(DateTime start, DateTime end)
+    public List<QuarterRangeRecord> GetQuarterRanges(DateTime start, DateTime end)
     {
-        var quarters = new List<QuarterRangeModel>();
+        var quarters = new List<QuarterRangeRecord>();
 
         // Determine the first quarter start date on or after 'start'
         int startMonth = ((start.Month - 1) / 3) * 3 + 1;
@@ -40,7 +40,7 @@ public class StockNews
                 quarterEnd = end;
 
             string quarterLabel = "Q" + ((quarterStart.Month - 1) / 3 + 1).ToString();
-            quarters.Add(new QuarterRangeModel { Start = quarterStart, End = quarterEnd, Quarter = quarterLabel, Year = quarterStart.Year });
+            quarters.Add(new QuarterRangeRecord { Start = quarterStart, End = quarterEnd, Quarter = quarterLabel, Year = quarterStart.Year.ToString() });
 
             current = quarterStart.AddMonths(3);
         }

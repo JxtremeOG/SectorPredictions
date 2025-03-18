@@ -24,6 +24,67 @@ public class MarketCalculations
         this.daysStartRun = daysStartRun;
     }
 
+    public MarketSectorResultModel GetLastQuarterReturns(Tuple<string, string> quarter) {
+        Tuple<string, string> lastQuarter = DateAdjuster.SubtractQuarters(quarter, 1);
+
+        DateTime daysStartRun = DateAdjuster.AdjustWeekendAndHolidays(DateAdjuster.QuarterStartDate(lastQuarter));
+        DateTime daysEndRun = DateAdjuster.AdjustWeekendAndHolidays(DateAdjuster.QuarterEndDate(lastQuarter));
+
+        MarketSectorResultModel marketResults = new MarketSectorResultModel();
+
+        foreach (var sector in SectorNames) {
+            DataTable startDataTable = dataReader.SectorCalculations(daysStartRun, sector);
+            DataTable endDataTable = dataReader.SectorCalculations(daysEndRun, sector);
+
+            double startValue = startDataTable.AsEnumerable()
+                .Select(row => row.Field<double>("WEIGHTED_ADJUSTED_CLOSE"))
+                .Average();
+
+            double endValue = endDataTable.AsEnumerable()
+                .Select(row => row.Field<double>("WEIGHTED_ADJUSTED_CLOSE"))
+                .Average();
+
+            double percentChange = ((endValue - startValue) / startValue) * 100;
+
+            switch (sector) {
+                case "Technology":
+                    marketResults.TechnologyQuarterResult = percentChange;
+                    break;
+                case "Financial Services":
+                    marketResults.FinancialServicesQuarterResult = percentChange;
+                    break;
+                case "Consumer Cyclical":
+                    marketResults.ConsumerCyclicalQuarterResult = percentChange;
+                    break;
+                case "Healthcare":
+                    marketResults.HealthcareQuarterResult = percentChange;
+                    break;
+                case "Communication Services":
+                    marketResults.CommunicationServicesQuarterResult = percentChange;
+                    break;
+                case "Industrials":
+                    marketResults.IndustrialsQuarterResult = percentChange;
+                    break;
+                case "Consumer Defensive":
+                    marketResults.ConsumerDefensiveQuarterResult = percentChange;
+                    break;
+                case "Energy":
+                    marketResults.EnergyQuarterResult = percentChange;
+                    break;
+                case "Basic Materials":
+                    marketResults.BasicMaterialsQuarterResult = percentChange;
+                    break;
+                case "Real Estate":
+                    marketResults.RealEstateQuarterResult = percentChange;
+                    break;
+                case "Utilities":
+                    marketResults.UtilitiesQuarterResult = percentChange;
+                    break;
+            }
+        }
+        return marketResults;
+    }
+
     public List<double> GetRollingPercent(int daysAgo)
     {
         List<double> sectorPercents = new List<double>();
@@ -64,6 +125,7 @@ public class MarketCalculations
     }
 
 
+    
     // This method builds a dictionary mapping each sector to a dictionary of percent values.
     public Dictionary<string, SectorPercentReturnsModel> MarketPercents()
     {
