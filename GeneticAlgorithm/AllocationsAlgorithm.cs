@@ -8,10 +8,15 @@ public class AllocationsAlgorithm : IAlgorithms<SectorAllocationModel> {
     public SectorAllocationModel CreateRandomIndividual()
     {
         SectorAllocationModel sectorAllocation = new SectorAllocationModel();
-        sectorAllocation.SetAllocations(Enumerable.Repeat(random.NextDouble(), sectorAllocation.SectorAllocationCount).ToList());
+        var allocations = Enumerable.Range(0, sectorAllocation.SectorAllocationCount)
+            .Select(_ => Random.Shared.NextDouble())
+            .ToList();
+        sectorAllocation.SetAllocations(allocations);
         sectorAllocation.NormalizeVector();
         return sectorAllocation;
     }
+
+
 
     public Tuple<SectorAllocationModel, SectorAllocationModel> Crossover(SectorAllocationModel parent1, SectorAllocationModel parent2, double mutationChance)
     {
@@ -32,8 +37,6 @@ public class AllocationsAlgorithm : IAlgorithms<SectorAllocationModel> {
 
         Mutate(child1, mutationChance);
         Mutate(child2, mutationChance);
-        child1.NormalizeVector();
-        child2.NormalizeVector();
 
         return new Tuple<SectorAllocationModel, SectorAllocationModel>(child1, child2);
     }
@@ -59,5 +62,6 @@ public class AllocationsAlgorithm : IAlgorithms<SectorAllocationModel> {
                 }
             }
         }
+        individual.NormalizeVector();
     }
 }

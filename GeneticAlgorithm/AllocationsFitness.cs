@@ -27,11 +27,11 @@ public class AllocationsFitness {
         day365Weight = fitnessWeights[2];
         day1095Weight = fitnessWeights[3];
         sentimentWeight = fitnessWeights[4];
-        bullvsBearWeight = fitnessWeights[5];
-        largeSectorWeight = fitnessWeights[6];
-        smallSectorWeight = fitnessWeights[7];
-        hhiWeight = fitnessWeights[8];
-        sortinoRiskWeight = fitnessWeights[9];
+        bullvsBearWeight = fitnessWeights[5] * 40; //Needs higher value
+        largeSectorWeight = fitnessWeights[6] * 40; //Needs higher value
+        smallSectorWeight = fitnessWeights[7] * 40; //Needs higher value
+        hhiWeight = fitnessWeights[8] * 10; //Needs medium value
+        sortinoRiskWeight = fitnessWeights[9] * 5; //Needs slightly higher value
         minAllocation = fitnessWeights[10];
 
         this.marketPercentReturns = marketPercentReturns;

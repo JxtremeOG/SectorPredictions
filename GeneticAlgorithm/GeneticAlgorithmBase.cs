@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 // Define a generic interface that every individual must implement.
 public interface IIndividual<T>
@@ -53,14 +54,21 @@ public class GeneticAlgorithmBase<T> where T : IIndividual<T>
         }
     }
 
-    public void EvaluatePopulation()
+    public async Task EvaluatePopulationAsync()
     {
+        // var tasks = Population.Select(individual => Task.Run(() =>
+        // {
+        //     individual.Fitness = 0;
+        //     EvaluateIndividual(individual);
+        // }));
+        // await Task.WhenAll(tasks);
         foreach (T individual in Population)
         {
             individual.Fitness = 0; // reset fitness
             EvaluateIndividual(individual);
         }
     }
+
 
     public List<T> GetWeakestIndividuals(double fraction)
     {
@@ -109,12 +117,12 @@ public class GeneticAlgorithmBase<T> where T : IIndividual<T>
         return immigrants;
     }
 
-    public T Run()
+    public async Task<T> Run()
     {
         T currentBest = default;
         for (int generation = 0; generation < GenerationCount; generation++)
         {
-            EvaluatePopulation();
+            await EvaluatePopulationAsync();
 
             // Select top performers (e.g., top 30%).
             int survivorsCount = (int)(PopulationSize * 0.3);
@@ -124,9 +132,9 @@ public class GeneticAlgorithmBase<T> where T : IIndividual<T>
 
             currentBest = newPopulation.First();
 
-            if (generation % 50 == 0)
+            if (typeof(T) == typeof(SectorsTuneModel)) //generation % 50 == 0 && 
             {
-                Console.WriteLine($"Generation: {generation}, Best Fitness: {currentBest.Fitness}");
+                Console.WriteLine($"SectorsTuneModel | Generation: {generation}, Best Fitness: {currentBest.Fitness}");
             }
 
             // Add a slice of weakest individuals.
@@ -138,10 +146,10 @@ public class GeneticAlgorithmBase<T> where T : IIndividual<T>
             // Create children to fill the remaining population.
             int remainingCount = PopulationSize - newPopulation.Count;
             var parentPairs = GetParentPairs(remainingCount);
-            newPopulation.AddRange(CreateChildren(parentPairs));
+            newPopulation.AddRange(CreateChildren(parentPairs)); 
 
             // If needed, keep creating children until reaching the required population size.
-            while (newPopulation.Count < PopulationSize)
+            while (newPopulation.Count < PopulationSize) 
             {
                 var extraParents = GetParentPairs(2);
                 var extraChildren = CreateChildren(extraParents);
@@ -149,11 +157,6 @@ public class GeneticAlgorithmBase<T> where T : IIndividual<T>
             }
 
             Population = newPopulation.Take(PopulationSize).ToList();
-
-            if (generation % 50 == 0)
-            {
-                Console.WriteLine($"Generation {generation} completed.");
-            }
         }
         return currentBest;
     }

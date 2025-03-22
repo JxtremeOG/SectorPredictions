@@ -7,8 +7,10 @@ public class SectorsFitness {
     private readonly QuarterRangeRecord rangeEnd;
     private readonly List<QuarterRangeRecord> testingQuarters;
     private readonly List<QuarterRangeRecord> quarterRanges;
-    private Dictionary<string, Tuple<Dictionary<string, SectorPercentReturnsModel>, Dictionary<string, SectorSentimentModel>>> trainingData;
-    private Dictionary<string, MarketSectorResultModel> marketResults;
+    private Dictionary<string, Tuple<Dictionary<string, SectorPercentReturnsModel>, Dictionary<string, SectorSentimentModel>>> trainingData = 
+        new Dictionary<string, Tuple<Dictionary<string, SectorPercentReturnsModel>, Dictionary<string, SectorSentimentModel>>>();
+    private Dictionary<string, MarketSectorResultModel> marketResults = 
+        new Dictionary<string, MarketSectorResultModel>();
     public SectorsFitness(int tunePopulation, double tuneMutation, int tuneImmigrantCount, int tuneGenerationCount,
         QuarterRangeRecord rangeStart, QuarterRangeRecord rangeEnd, List<QuarterRangeRecord> testingQuarters) {
         this.tunePopulation = tunePopulation;
@@ -43,7 +45,6 @@ public class SectorsFitness {
 
     public void EvaluateIndividualFitness(SectorsTuneModel individual) {
         individual.Fitness = 0.0;
-        individual.GetParameters();
 
         foreach (QuarterRangeRecord quarter in this.quarterRanges) {
             if (testingQuarters.Contains(quarter)) { // skip testing quarters
@@ -63,7 +64,7 @@ public class SectorsFitness {
                 allocationAlgorithm.Crossover, allocationAlgorithm.Mutate
             );
 
-            SectorAllocationModel bestAllocation = allocationGeneticAlgorithm.Run();
+            SectorAllocationModel bestAllocation = allocationGeneticAlgorithm.Run().Result;
 
             MarketSectorResultModel quarterResults = marketResults[quarter.Quarter.ToString()+quarter.Year.ToString()];
 
@@ -108,5 +109,6 @@ public class SectorsFitness {
             }
             individual.Fitness += fitness;
         }
+        Console.WriteLine($"SectorsTuneModel | Fitness: {individual.Fitness}");
     }
 }

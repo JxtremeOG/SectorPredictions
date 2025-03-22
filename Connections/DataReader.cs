@@ -27,7 +27,7 @@ public class DataReader {
     private SqliteConnection sqlite;
     private SqliteTransaction transaction;
     public DataReader() {
-        string dbPath = @"C:\Users\zoldw\Projects\Coding\CodeFest2025\AdvancedBackend\MARKETADMIN.db";
+        string dbPath = @"C:\Users\zoldw\Projects\Coding\SectorPredictions\MARKETADMIN.db";
         sqlite = new SqliteConnection($"Data Source={dbPath}");
     }
 
@@ -65,6 +65,34 @@ public class DataReader {
         {
             sqlite.Close();
         }
+    }
+
+    public List<(string sector, string ticker)> GetSectorETFTickerPairs()
+    {
+        List<(string sector, string ticker)> sectorTickerPairs = new List<(string, string)>();
+
+        sqlite.Open();
+        using (var command = new SqliteCommand("SELECT SECTOR, TICKER FROM SECTOR_ETFS", sqlite))
+        {
+            try
+            {
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        sectorTickerPairs.Add((reader.GetString(0), reader.GetString(1)));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error executing reader: " + ex.Message);
+                throw;  // rethrow after logging
+            }
+        }
+        sqlite.Close();
+
+        return sectorTickerPairs;
     }
 
     public List<(string sector, string ticker)> GetSectorTickerPairs()
@@ -168,6 +196,51 @@ public class DataReader {
         {
             Console.WriteLine($"Error: {ex.Message}");
         }
+    }
+
+    public DataTable SectorETFCalculations(DateTime runDate, string sector) {
+        // Construct the SQL query.
+        string query = $@"
+            SELECT
+                SECTOR AS SECTOR,
+                DATE AS DATE,
+                OPEN AS WEIGHTED_OPEN,
+                HIGH AS WEIGHTED_HIGH,
+                LOW AS WEIGHTED_CLOSE,
+                ADJUSTED_CLOSE AS WEIGHTED_ADJUSTED_CLOSE,
+                VOLUME AS WEIGHTED_VOLUME
+            FROM
+                SECTOR_ETF_DATA
+            WHERE SECTOR = @sector 
+                AND DATE = @date";
+
+        DataTable dt = new DataTable();
+
+        // Open the connection, execute the query, and fill the DataTable.
+        OpenConnection();
+        try
+        {
+            using (var cmd = new SqliteCommand(query, sqlite))
+            {
+                cmd.Parameters.AddWithValue("@sector", sector);
+                cmd.Parameters.AddWithValue("@date", runDate);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    dt.Load(reader);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error executing SectorCalculations: {ex.Message}");
+            throw;
+        }
+        finally
+        {
+            CloseConnection();
+        }
+        
+        return dt;
     }
 
     public DataTable SectorCalculations(DateTime runDate, string sector)

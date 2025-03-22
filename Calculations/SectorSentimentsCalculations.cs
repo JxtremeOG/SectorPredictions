@@ -45,7 +45,7 @@ public class SectorSentimentsCalculations {
         {
             string name = SectorNames[sectorIndex];
             sentiments.Add(GetSectorSentimentModel(quarterYear, name));
-            Console.WriteLine($"Sector: {name.PadRight(22)} | Sentiment Score: {sentiments[sentiments.Count-1].SentimentScore.ToString("F2").PadRight(8)}");
+            Console.WriteLine($"Year: {quarterYear.Item2} | Quarter: {quarterYear.Item1} | Sector: {name.PadRight(22)} | Sentiment Score: {sentiments[sentiments.Count-1].SentimentScore.ToString("F2").PadRight(8)}");
         }
         return sentiments;
     }
@@ -72,7 +72,7 @@ public class SectorSentimentsCalculations {
         double sentimentScore = row["SENTIMENT_SCORE"] != DBNull.Value ? Convert.ToDouble(row["SENTIMENT_SCORE"]) : 0.0;
 
         // Create and return the SectorSentimentModel.
-        return new SentimentsModel(totalPositive, totalNegative, totalNeutral, sentimentScore);
+        return new SentimentsModel(totalPositive, totalNegative, totalNeutral, sector.Equals("General") ? sentimentScore : sentimentScore / 100); //Number of stocks per sector we used
     }
 
 

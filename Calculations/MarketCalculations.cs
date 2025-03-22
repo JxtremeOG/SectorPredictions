@@ -24,6 +24,8 @@ public class MarketCalculations
         this.daysStartRun = daysStartRun;
     }
 
+    
+
     public MarketSectorResultModel GetLastQuarterReturns(Tuple<string, string> quarter) {
         Tuple<string, string> lastQuarter = DateAdjuster.SubtractQuarters(quarter, 1);
 
@@ -33,8 +35,8 @@ public class MarketCalculations
         MarketSectorResultModel marketResults = new MarketSectorResultModel();
 
         foreach (var sector in SectorNames) {
-            DataTable startDataTable = dataReader.SectorCalculations(daysStartRun, sector);
-            DataTable endDataTable = dataReader.SectorCalculations(daysEndRun, sector);
+            DataTable startDataTable = dataReader.SectorETFCalculations(daysStartRun, sector);
+            DataTable endDataTable = dataReader.SectorETFCalculations(daysEndRun, sector);
 
             double startValue = startDataTable.AsEnumerable()
                 .Select(row => row.Field<double>("WEIGHTED_ADJUSTED_CLOSE"))
@@ -96,8 +98,8 @@ public class MarketCalculations
         foreach (var sector in SectorNames)
         {
             // Get the DataTable for each date.
-            DataTable startDataTable = dataReader.SectorCalculations(startDate, sector);
-            DataTable endDataTable = dataReader.SectorCalculations(endDate, sector);
+            DataTable startDataTable = dataReader.SectorETFCalculations(startDate, sector);
+            DataTable endDataTable = dataReader.SectorETFCalculations(endDate, sector);
 
             // Ensure the DataTable has rows before processing.
             if (startDataTable.Rows.Count == 0 || endDataTable.Rows.Count == 0)
@@ -118,7 +120,7 @@ public class MarketCalculations
             double percentChange = ((endValue - startValue) / startValue) * 100;
             sectorPercents.Add(percentChange);
             
-            Console.WriteLine($"Sector: {sector.PadRight(22)} | Start: {startValue.ToString("F2").PadRight(8)}, End: {endValue.ToString("F2").PadRight(8)}, Change: {percentChange.ToString("F2")}%");
+            Console.WriteLine($"Start Date: {startDate.ToString("MM/dd/yyyy")} | Days Back {daysAgo.ToString().PadRight(4)} | Sector: {sector.PadRight(22)} | Start: {startValue.ToString("F2").PadRight(8)}, End: {endValue.ToString("F2").PadRight(8)}, Change: {percentChange.ToString("F2")}%");
         }
 
         return sectorPercents;
