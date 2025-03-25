@@ -49,6 +49,7 @@ public class AllocationsAlgorithm : IAlgorithms<SectorAllocationModel> {
 
     public void Mutate(SectorAllocationModel individual, double mutationChance)
     {
+        var allocations = individual.GetAllocations();
         for (int i = 0; i < individual.SectorAllocationCount; i++)
         {
             if (random.NextDouble() < mutationChance)
@@ -57,7 +58,7 @@ public class AllocationsAlgorithm : IAlgorithms<SectorAllocationModel> {
                 double mutationAmount = (random.NextDouble() * 0.2) - 0.1;
                 individual.ChangeAllocation(i, mutationAmount);
                 // Ensure that the allocation is not negative
-                if (individual.GetAllocations()[i] < 0)
+                if (allocations[i] < 0)
                 {
                     individual.AssignAllocation(i, 0);
                 }

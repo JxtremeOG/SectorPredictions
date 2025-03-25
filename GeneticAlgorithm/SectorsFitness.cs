@@ -39,7 +39,7 @@ public class SectorsFitness {
             trainingData.Add(quarter.Quarter.ToString()+quarter.Year.ToString(), 
             new Tuple<Dictionary<string, SectorTechnicalMetricModel>, Dictionary<string, SectorSentimentModel>>(marketPercents, sentimentDict));
 
-            marketResults.Add(quarter.Quarter.ToString()+quarter.Year.ToString(), marketCalculations.GetLastQuarterReturns(quarterToPredict));
+            marketResults.Add(quarter.Quarter.ToString()+quarter.Year.ToString(), marketCalculations.GetCurrentQuarterReturns(quarterToPredict));
         }
     }
 
@@ -110,9 +110,9 @@ public class SectorsFitness {
                         break;
                 }
             }
-            if (fitness < 0) {
-                fitness = fitness * 3;
-            }
+            // if (fitness < 0) {
+            //     fitness = fitness * 1.5;
+            // }
             individual.Fitness += fitness;
             if (quarter == lastQuarter) {
                 Console.WriteLine($"SectorAllocationModel | {quarter.Quarter} {quarter.Year} | Individual Fitness: {individual.Fitness}");

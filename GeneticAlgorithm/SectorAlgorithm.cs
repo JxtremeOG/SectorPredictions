@@ -43,15 +43,20 @@ public class SectorAlgorithm : IAlgorithms<SectorsTuneModel>
         {
             if (random.NextDouble() < mutationChance)
             {
-                // Determine a mutation factor: a change of up to +/- 10% of the current value.
-                double mutationFactor = 1 + ((random.NextDouble() - 0.5) * 0.2); // 0.2 gives +/-10%
-                double mutatedValue = parameters[i] * mutationFactor;
-                
-                // Optional: Clamp mutatedValue to a valid range, e.g. 0 to 100.
-                mutatedValue = Math.Max(0, Math.Min(mutatedValue, 100));
-                
-                // Update the parameter with the mutated value.
-                parameters[i] = mutatedValue;
+                if (random.NextDouble() < .9) {
+                    // Determine a mutation factor: a change of up to +/- 10% of the current value.
+                    double mutationFactor = 1 + ((random.NextDouble() - 0.5) * 0.2); // 0.2 gives +/-10%
+                    double mutatedValue = parameters[i] * mutationFactor;
+                    
+                    // Optional: Clamp mutatedValue to a valid range, e.g. 0 to 100.
+                    mutatedValue = Math.Max(0, Math.Min(mutatedValue, 100));
+                    
+                    // Update the parameter with the mutated value.
+                    parameters[i] = mutatedValue;
+                }
+                else {
+                    parameters[i] = parameters[i] * -1;
+                }
             }
         }
         
@@ -66,7 +71,7 @@ public class SectorAlgorithm : IAlgorithms<SectorsTuneModel>
         SectorsTuneModel sectorsTune = new SectorsTuneModel();
         sectorsTune.SetParameters(
             Enumerable.Range(0, sectorsTune.ParameterCount)
-                    .Select(_ => Random.Shared.NextDouble() * 5)
+                    .Select(_ => Random.Shared.NextDouble() * 5 * (Random.Shared.NextDouble() < .9 ? 1 : -1))
                     .ToList()
         );
         sectorsTune.id = Random.Shared.Next(0, 1000000); // Assign a random ID for the individual.

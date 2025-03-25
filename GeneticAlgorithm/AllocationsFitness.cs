@@ -7,6 +7,21 @@ public class AllocationsFitness {
         "Technology", "Financial Services", "Consumer Cyclical", "Industrials", "Real Estate", "Basic Materials"
     };
 
+    public Dictionary<string, double> SectorsMarketWeight { get; set; } = new Dictionary<string, double>
+    {
+        { "Technology", 27.87 },
+        { "Financial Services", 15.87 },
+        { "Consumer Cyclical", 10.76 },
+        { "Healthcare", 10.26 },
+        { "Communication Services", 9.21 },
+        { "Industrials", 8.38 },
+        { "Consumer Defensive", 5.5 },
+        { "Energy", 4.76 },
+        { "Basic Materials", 2.51 },
+        { "Real Estate", 2.54 },
+        { "Utilities", 2.34 }
+    };
+
     private readonly double day30Weight;
     private readonly double day90Weight;
     private readonly double day365Weight;
@@ -72,7 +87,7 @@ public class AllocationsFitness {
             double day365Score = percentReturn.Day365Percent * day365Weight * allocation;
             double day1095Score = percentReturn.Day1095Percent * day1095Weight * allocation;
             double rsiScore = percentReturn.RSI30 * RSIWeight * allocation;
-            double atrScore = percentReturn.ATR90 * ATRWeight * allocation * -1; // Punish high ATR.
+            double atrScore = percentReturn.ATR90 * ATRWeight * allocation; // Punish high ATR.
             double adlScore = percentReturn.ADLChange30 * ADLPercentWeight * allocation;
 
             double lastQuarterSentimentScore = sentiment.LastQuarter.SentimentScore * quarterSentimentWeight * allocation;
@@ -82,16 +97,16 @@ public class AllocationsFitness {
             int bullGood = CyclicalSectors.Contains(name) ? 1 : -1;
             double marketCyclicalVsDefensiveScore = generalSentimentScore * bullvsBearWeight * bullGood * allocation;
 
-            double largeSectorScore = allocation * allocation * largeSectorWeight * -1; // Punish too large allocations.
-            double unevenallocationScore = Math.Abs(allocation - 9.09) * -1 * UnevenAllocationWeight; // Punish allocations away from average
+            double largeSectorScore = allocation * allocation * largeSectorWeight; // Punish too large allocations.
+            double unevenallocationScore = Math.Abs(allocation - SectorsMarketWeight[name]) * UnevenAllocationWeight; // Punish allocations away from average
             double allocationDiff = Math.Max(minAllocation - allocation, 0);
-            double smallSectorScore = allocationDiff * allocationDiff * smallSectorWeight * -1;
+            double smallSectorScore = allocationDiff * allocationDiff * smallSectorWeight;
 
             individual.Fitness += day30Score + day90Score + day365Score + day1095Score + lastQuarterSentimentScore + lastYearSentimentScore + marketCyclicalVsDefensiveScore + largeSectorScore + smallSectorScore + rsiScore + atrScore + adlScore + unevenallocationScore;
         }
 
         // Calculate HHI risk score.
-        double hhiRiskScore = CalculateHHI(individual.GetAllocations()) * hhiWeight * -1;
+        double hhiRiskScore = CalculateHHI(individual.GetAllocations()) * hhiWeight;
         double sortinoScore = CalculateSortinoScore(individual);
         
 
