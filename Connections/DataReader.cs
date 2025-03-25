@@ -198,6 +198,192 @@ public class DataReader {
         }
     }
 
+    public DataTable SectorADLChange(DateTime startDate, DateTime endDate, string sector) {
+        // Construct the SQL query.
+        string query = $@"
+            WITH DailyMFV AS (
+            SELECT
+                DATE,
+                High,
+                Low,
+                ADJUSTED_CLOSE AS Close,
+                Volume,
+                CASE 
+                WHEN (High - Low) = 0 THEN 0 
+                ELSE ((Close - Low) - (High - Close)) / (High - Low)
+                END AS Multiplier,
+                CASE 
+                WHEN (High - Low) = 0 THEN 0 
+                ELSE (((Close - Low) - (High - Close)) / (High - Low)) * Volume
+                END AS MFV
+            FROM SECTOR_ETF_DATA
+            WHERE SECTOR = @sector
+                AND DATE BETWEEN @dateStart AND @dateEnd
+            )
+            SELECT
+            DATE,
+            High,
+            Low,
+            Close,
+            Volume,
+            Multiplier,
+            MFV,
+            SUM(MFV) OVER (ORDER BY DATE) AS ADL
+            FROM DailyMFV
+        ";
+
+        DataTable dt = new DataTable();
+
+        // Open the connection, execute the query, and fill the DataTable.
+        OpenConnection();
+        try
+        {
+            using (var cmd = new SqliteCommand(query, sqlite))
+            {
+                cmd.Parameters.AddWithValue("@sector", sector);
+                cmd.Parameters.AddWithValue("@dateStart", startDate);
+                cmd.Parameters.AddWithValue("@dateEnd", endDate);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    dt.Load(reader);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error executing SectorCalculations: {ex.Message}");
+            throw;
+        }
+        finally
+        {
+            CloseConnection();
+        }
+        
+        return dt;
+    }
+
+    public DataTable SectorETFATR(DateTime startDate, DateTime endDate, string sector) {
+        // Construct the SQL query.
+        string query = $@"
+            WITH DataWithPrev AS (
+            SELECT
+                DATE,
+                High,
+                Low,
+                ADJUSTED_CLOSE AS Close,
+                LAG(ADJUSTED_CLOSE) OVER (ORDER BY DATE) AS PrevClose
+            FROM SECTOR_ETF_DATA
+            WHERE SECTOR = @sector
+            ),
+            Calc AS (
+            SELECT
+                DATE,
+                High,
+                Low,
+                PrevClose,
+                (High - Low) AS Range1,
+                ABS(High - PrevClose) AS Range2,
+                ABS(Low - PrevClose) AS Range3,
+                CASE
+                WHEN (High - Low) >= ABS(High - PrevClose) 
+                    AND (High - Low) >= ABS(Low - PrevClose)
+                THEN (High - Low)
+                WHEN ABS(High - PrevClose) >= ABS(Low - PrevClose)
+                THEN ABS(High - PrevClose)
+                ELSE ABS(Low - PrevClose)
+                END AS TR
+            FROM DataWithPrev
+            WHERE DATE BETWEEN @dateStart AND @dateEnd
+            ),
+            CUR AS (
+            SELECT ADJUSTED_CLOSE 
+            FROM SECTOR_ETF_DATA
+            WHERE SECTOR = @sector
+                AND DATE = @dateEnd
+            )
+            SELECT (AVG(Calc.TR) / CUR.ADJUSTED_CLOSE) * 100 AS ATR_PERCENT
+            FROM Calc, CUR;
+
+        ";
+
+        DataTable dt = new DataTable();
+
+        // Open the connection, execute the query, and fill the DataTable.
+        OpenConnection();
+        try
+        {
+            using (var cmd = new SqliteCommand(query, sqlite))
+            {
+                cmd.Parameters.AddWithValue("@sector", sector);
+                cmd.Parameters.AddWithValue("@dateStart", startDate);
+                cmd.Parameters.AddWithValue("@dateEnd", endDate);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    dt.Load(reader);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error executing SectorCalculations: {ex.Message}");
+            throw;
+        }
+        finally
+        {
+            CloseConnection();
+        }
+        
+        return dt;
+    }
+
+    public DataTable SectorETFRSIInfo(DateTime startDate, DateTime endDate, string sector) {
+        // Construct the SQL query.
+        string query = $@"
+            WITH PriceChanges AS (
+            SELECT
+                DATE,
+                ADJUSTED_CLOSE,
+                ADJUSTED_CLOSE - LAG(ADJUSTED_CLOSE) OVER (ORDER BY DATE) AS change
+            FROM SECTOR_ETF_DATA
+            WHERE SECTOR = @sector
+                AND DATE BETWEEN @dateStart AND @dateEnd
+            )
+            SELECT
+            AVG(CASE WHEN change > 0 THEN change END) AS AVERAGE_GAIN,
+            AVG(CASE WHEN change < 0 THEN ABS(change) END) AS AVERAGE_LOSS
+            FROM PriceChanges
+        ";
+
+        DataTable dt = new DataTable();
+
+        // Open the connection, execute the query, and fill the DataTable.
+        OpenConnection();
+        try
+        {
+            using (var cmd = new SqliteCommand(query, sqlite))
+            {
+                cmd.Parameters.AddWithValue("@sector", sector);
+                cmd.Parameters.AddWithValue("@dateStart", startDate);
+                cmd.Parameters.AddWithValue("@dateEnd", endDate);
+                using (var reader = cmd.ExecuteReader())
+                {
+                    dt.Load(reader);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error executing SectorCalculations: {ex.Message}");
+            throw;
+        }
+        finally
+        {
+            CloseConnection();
+        }
+        
+        return dt;
+    }
+
     public DataTable SectorETFCalculations(DateTime runDate, string sector) {
         // Construct the SQL query.
         string query = $@"

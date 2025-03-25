@@ -24,13 +24,9 @@ public class MarketCalculations
         this.daysStartRun = daysStartRun;
     }
 
-    
-
-    public MarketSectorResultModel GetLastQuarterReturns(Tuple<string, string> quarter) {
-        Tuple<string, string> lastQuarter = DateAdjuster.SubtractQuarters(quarter, 1);
-
-        DateTime daysStartRun = DateAdjuster.AdjustWeekendAndHolidays(DateAdjuster.QuarterStartDate(lastQuarter));
-        DateTime daysEndRun = DateAdjuster.AdjustWeekendAndHolidays(DateAdjuster.QuarterEndDate(lastQuarter));
+    public MarketSectorResultModel GetCurrentQuarterReturns(Tuple<string, string> quarter) {
+        DateTime daysStartRun = DateAdjuster.AdjustWeekendAndHolidays(DateAdjuster.QuarterStartDate(quarter));
+        DateTime daysEndRun = DateAdjuster.AdjustWeekendAndHolidays(DateAdjuster.QuarterEndDate(quarter));
 
         MarketSectorResultModel marketResults = new MarketSectorResultModel();
 
@@ -87,6 +83,11 @@ public class MarketCalculations
         return marketResults;
     }
 
+    public MarketSectorResultModel GetLastQuarterReturns(Tuple<string, string> quarter) {
+        Tuple<string, string> lastQuarter = DateAdjuster.SubtractQuarters(quarter, 1);
+        return GetCurrentQuarterReturns(lastQuarter);
+    }
+
     public List<double> GetRollingPercent(int daysAgo)
     {
         List<double> sectorPercents = new List<double>();
@@ -126,22 +127,110 @@ public class MarketCalculations
         return sectorPercents;
     }
 
+    public List<double> GetADLChangePercent(int days) {
+        List<double> sectorADLPercents = new List<double>();
+        DateTime startDate, endDate;
 
+        endDate = daysStartRun;
+        startDate = DateAdjuster.AdjustWeekendAndHolidays(daysStartRun.AddDays(-days));
+
+        foreach (var sector in SectorNames)
+        {
+            // Get the DataTable for each date.
+            DataTable averageChangeDataTable1 = dataReader.SectorADLChange(startDate, endDate, sector);
+            DataTable averageChangeDataTable2 = dataReader.SectorADLChange(DateAdjuster.AdjustWeekendAndHolidays(daysStartRun.AddDays(-365)), startDate, sector);
+
+            // Use LINQ to convert DataRows to a sequence of double values.
+            double ADL1 = averageChangeDataTable1.AsEnumerable()
+                .Select(row => row.Field<double>("ADL"))
+                .Last();
+
+            double ADL2 = averageChangeDataTable2.AsEnumerable()
+                .Select(row => row.Field<double>("ADL"))
+                .Last();
+
+            double ADLPercentChange = (ADL2/365 - ADL1/days) / ADL1/days * 100;
+
+            sectorADLPercents.Add(ADLPercentChange);
+            
+            Console.WriteLine($"Start Date: {startDate.ToString("MM/dd/yyyy")} | Duration: {days.ToString().PadRight(4)} | Sector: {sector.PadRight(22)} | Accumulation/Distribution Line: {ADLPercentChange.ToString("F2").PadRight(8)}");
+        }
+
+        return sectorADLPercents;
+    }
+    public List<double> GetAverageTrueRange(int days) {
+        List<double> sectorATR = new List<double>();
+        DateTime startDate, endDate;
+
+        endDate = daysStartRun;
+        startDate = DateAdjuster.AdjustWeekendAndHolidays(daysStartRun.AddDays(-days));
+
+        foreach (var sector in SectorNames)
+        {
+            // Get the DataTable for each date.
+            DataTable averageChangeDataTable = dataReader.SectorETFATR(startDate, endDate, sector);
+
+            // Use LINQ to convert DataRows to a sequence of double values.
+            double ATR = averageChangeDataTable.AsEnumerable()
+                .Select(row => row.Field<double>("ATR_PERCENT"))
+                .Average();
+
+            sectorATR.Add(ATR);
+            
+            Console.WriteLine($"Start Date: {startDate.ToString("MM/dd/yyyy")} | Duration: {days.ToString().PadRight(4)} | Sector: {sector.PadRight(22)} | Average True Range: {ATR.ToString("F2").PadRight(8)}");
+        }
+
+        return sectorATR;
+    }
+    public List<double> GetRelativeStrengthIndex(int days) {
+        List<double> sectorRSI = new List<double>();
+        DateTime startDate, endDate;
+
+        endDate = daysStartRun;
+        startDate = DateAdjuster.AdjustWeekendAndHolidays(daysStartRun.AddDays(-days));
+
+        foreach (var sector in SectorNames)
+        {
+            // Get the DataTable for each date.
+            DataTable averageChangeDataTable = dataReader.SectorETFRSIInfo(startDate, endDate, sector);
+
+            // Use LINQ to convert DataRows to a sequence of double values.
+            double averageGain = averageChangeDataTable.AsEnumerable()
+                .Select(row => row.Field<double>("AVERAGE_GAIN"))
+                .Average();
+
+            double averageLoss = averageChangeDataTable.AsEnumerable()
+                .Select(row => row.Field<double>("AVERAGE_LOSS"))
+                .Average();
+
+            double relativeStrength = averageGain / averageLoss;
+            double relativeStrengthIndex = 100 - (100 / (1 + relativeStrength));
+
+            sectorRSI.Add(relativeStrengthIndex);
+            
+            Console.WriteLine($"Start Date: {startDate.ToString("MM/dd/yyyy")} | Duration: {days.ToString().PadRight(4)} | Sector: {sector.PadRight(22)} | Relative Strength Index: {relativeStrengthIndex.ToString("F2").PadRight(8)}");
+        }
+
+        return sectorRSI;
+    }
     
     // This method builds a dictionary mapping each sector to a dictionary of percent values.
-    public Dictionary<string, SectorPercentReturnsModel> MarketPercents()
+    public Dictionary<string, SectorTechnicalMetricModel> MarketTechnicalIndicators()
     {
-        Dictionary<string, SectorPercentReturnsModel> percentDict = new Dictionary<string, SectorPercentReturnsModel>();
+        Dictionary<string, SectorTechnicalMetricModel> percentDict = new Dictionary<string, SectorTechnicalMetricModel>();
 
         List<double> day30 = GetRollingPercent(30);
         List<double> day90 = GetRollingPercent(90);
         List<double> day365 = GetRollingPercent(365);
         List<double> day1095 = GetRollingPercent(1095);
+        List<double> RSI30 = GetRelativeStrengthIndex(30);
+        List<double> ATR90 = GetAverageTrueRange(90);
+        List<double> ADLChange30 = GetADLChangePercent(30);
 
         for (int sectorIndex = 0; sectorIndex < SectorNames.Count; sectorIndex++)
         {
             string name = SectorNames[sectorIndex];
-            percentDict[name] = new SectorPercentReturnsModel(day30[sectorIndex], day90[sectorIndex], day365[sectorIndex], day1095[sectorIndex]);
+            percentDict[name] = new SectorTechnicalMetricModel(day30[sectorIndex], day90[sectorIndex], day365[sectorIndex], day1095[sectorIndex], RSI30[sectorIndex], ATR90[sectorIndex], ADLChange30[sectorIndex]);
         }
         return percentDict;
     }

@@ -16,7 +16,7 @@ public class SectorAllocationModel : IIndividual<SectorAllocationModel>{
         "Real Estate",
         "Utilities"
     };
-
+    public int id { get; set; } = 0;
     private List<double> Allocations { get; set; } = new List<double>();
     public double Fitness { get; set; } = 0.0;
     public int SectorAllocationCount;

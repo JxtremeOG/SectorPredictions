@@ -7,8 +7,8 @@ public class SectorsFitness {
     private readonly QuarterRangeRecord rangeEnd;
     private readonly List<QuarterRangeRecord> testingQuarters;
     private readonly List<QuarterRangeRecord> quarterRanges;
-    private Dictionary<string, Tuple<Dictionary<string, SectorPercentReturnsModel>, Dictionary<string, SectorSentimentModel>>> trainingData = 
-        new Dictionary<string, Tuple<Dictionary<string, SectorPercentReturnsModel>, Dictionary<string, SectorSentimentModel>>>();
+    private Dictionary<string, Tuple<Dictionary<string, SectorTechnicalMetricModel>, Dictionary<string, SectorSentimentModel>>> trainingData = 
+        new Dictionary<string, Tuple<Dictionary<string, SectorTechnicalMetricModel>, Dictionary<string, SectorSentimentModel>>>();
     private Dictionary<string, MarketSectorResultModel> marketResults = 
         new Dictionary<string, MarketSectorResultModel>();
     public SectorsFitness(int tunePopulation, double tuneMutation, int tuneImmigrantCount, int tuneGenerationCount,
@@ -33,11 +33,11 @@ public class SectorsFitness {
             MarketCalculations marketCalculations = new MarketCalculations(daysStartRun);
             SectorSentimentsCalculations sectorSentiments = new SectorSentimentsCalculations(quarterToPredict);
 
-            Dictionary<string, SectorPercentReturnsModel> marketPercents = marketCalculations.MarketPercents();
+            Dictionary<string, SectorTechnicalMetricModel> marketPercents = marketCalculations.MarketTechnicalIndicators();
             Dictionary<string, SectorSentimentModel> sentimentDict = sectorSentiments.SectorSentiments();
 
             trainingData.Add(quarter.Quarter.ToString()+quarter.Year.ToString(), 
-            new Tuple<Dictionary<string, SectorPercentReturnsModel>, Dictionary<string, SectorSentimentModel>>(marketPercents, sentimentDict));
+            new Tuple<Dictionary<string, SectorTechnicalMetricModel>, Dictionary<string, SectorSentimentModel>>(marketPercents, sentimentDict));
 
             marketResults.Add(quarter.Quarter.ToString()+quarter.Year.ToString(), marketCalculations.GetLastQuarterReturns(quarterToPredict));
         }
@@ -45,15 +45,18 @@ public class SectorsFitness {
 
     public void EvaluateIndividualFitness(SectorsTuneModel individual) {
         individual.Fitness = 0.0;
+        QuarterRangeRecord lastQuarter = quarterRanges.Last();
+        List<double> parameterWeights = individual.GetParameters();
 
         foreach (QuarterRangeRecord quarter in this.quarterRanges) {
             if (testingQuarters.Contains(quarter)) { // skip testing quarters
                 continue;
             }
 
-            List<double> parameterWeights = individual.GetParameters();
-            Dictionary<string, SectorPercentReturnsModel> marketPercents = trainingData[quarter.Quarter.ToString()+quarter.Year.ToString()].Item1; // Dictionary<string, SectorPercentReturnsModel>
-            Dictionary<string, SectorSentimentModel> sentimentDict = trainingData[quarter.Quarter.ToString()+quarter.Year.ToString()].Item2; // Dictionary<string, SectorSentimentModel>
+            string key = quarter.Quarter.ToString() + quarter.Year.ToString();
+
+            Dictionary<string, SectorTechnicalMetricModel> marketPercents = trainingData[key].Item1; // Dictionary<string, SectorPercentReturnsModel>
+            Dictionary<string, SectorSentimentModel> sentimentDict = trainingData[key].Item2; // Dictionary<string, SectorSentimentModel>
             
             AllocationsFitness allocationsFitness = new AllocationsFitness(parameterWeights, marketPercents, sentimentDict);
 
@@ -66,7 +69,7 @@ public class SectorsFitness {
 
             SectorAllocationModel bestAllocation = allocationGeneticAlgorithm.Run().Result;
 
-            MarketSectorResultModel quarterResults = marketResults[quarter.Quarter.ToString()+quarter.Year.ToString()];
+            MarketSectorResultModel quarterResults = marketResults[key];
 
             double fitness = 0;
             foreach (var allocation in bestAllocation.ToDict())
@@ -107,8 +110,14 @@ public class SectorsFitness {
                         break;
                 }
             }
+            if (fitness < 0) {
+                fitness = fitness * 3;
+            }
             individual.Fitness += fitness;
+            if (quarter == lastQuarter) {
+                Console.WriteLine($"SectorAllocationModel | {quarter.Quarter} {quarter.Year} | Individual Fitness: {individual.Fitness}");
+            }
         }
-        Console.WriteLine($"SectorsTuneModel | Fitness: {individual.Fitness}");
+        // Console.WriteLine($"SectorsTuneModel | Fitness: {individual.Fitness}");
     }
 }

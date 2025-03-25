@@ -11,28 +11,40 @@ public class AllocationsFitness {
     private readonly double day90Weight;
     private readonly double day365Weight;
     private readonly double day1095Weight;
-    private readonly double sentimentWeight;
+    private readonly double quarterSentimentWeight;
     private readonly double bullvsBearWeight;
     private readonly double largeSectorWeight;
     private readonly double smallSectorWeight;
     private readonly double hhiWeight;
     private readonly double sortinoRiskWeight;
     private readonly double minAllocation;
+    private readonly double yearSentimentWeight;
+    private readonly double RSIWeight;
+    private readonly double ATRWeight;
+    private readonly double ADLPercentWeight;
+    private readonly double UnevenAllocationWeight;
     private readonly Dictionary<string, SectorSentimentModel> marketSentiments;
-    private readonly Dictionary<string, SectorPercentReturnsModel> marketPercentReturns;
+    private readonly Dictionary<string, SectorTechnicalMetricModel> marketPercentReturns;
     private readonly List<string> sectorNames;
-    public AllocationsFitness(List<double> fitnessWeights, Dictionary<string, SectorPercentReturnsModel> marketPercentReturns, Dictionary<string, SectorSentimentModel> marketSentiments) {
+    public AllocationsFitness(List<double> fitnessWeights, Dictionary<string, SectorTechnicalMetricModel> marketPercentReturns, Dictionary<string, SectorSentimentModel> marketSentiments) {
         day30Weight = fitnessWeights[0];
         day90Weight = fitnessWeights[1];
         day365Weight = fitnessWeights[2];
         day1095Weight = fitnessWeights[3];
-        sentimentWeight = fitnessWeights[4];
+        quarterSentimentWeight = fitnessWeights[4];
         bullvsBearWeight = fitnessWeights[5] * 40; //Needs higher value
         largeSectorWeight = fitnessWeights[6] * 40; //Needs higher value
         smallSectorWeight = fitnessWeights[7] * 40; //Needs higher value
         hhiWeight = fitnessWeights[8] * 10; //Needs medium value
         sortinoRiskWeight = fitnessWeights[9] * 5; //Needs slightly higher value
         minAllocation = fitnessWeights[10];
+        yearSentimentWeight = fitnessWeights[11];
+        RSIWeight = fitnessWeights[12] * 5; //Needs slightly higher value
+        ATRWeight = fitnessWeights[13] * 9; //Needs slightly higher value
+        ADLPercentWeight = fitnessWeights[14] * 40; //Needs slightly higher value
+        UnevenAllocationWeight = fitnessWeights[15] * 40; //Needs slightly higher value
+
+        // Initialize the market percent returns and sentiments.
 
         this.marketPercentReturns = marketPercentReturns;
         this.marketSentiments = marketSentiments;
@@ -42,28 +54,40 @@ public class AllocationsFitness {
 
     public void EvaluateIndividualFitness(SectorAllocationModel individual) {
         individual.Fitness = 0.0;
+        var allocations = individual.GetAllocations();
+        double generalSentimentScore = marketSentiments["General"].LastQuarter.SentimentScore;
+
 
         // Loop through each sector.
         for (int sectorIndex = 0; sectorIndex < sectorNames.Count; sectorIndex++)
         {
             string name = sectorNames[sectorIndex];
-            double allocation = individual.GetAllocations()[sectorIndex];
+            double allocation = allocations[sectorIndex];
+            var percentReturn = marketPercentReturns[name];
+            var sentiment = marketSentiments[name];
 
-            double day30Score = marketPercentReturns[name].Day30Percent * day30Weight * allocation;
-            double day90Score = marketPercentReturns[name].Day90Percent * day90Weight * allocation;
-            double day365Score = marketPercentReturns[name].Day365Percent * day365Weight * allocation;
-            double day1095Score = marketPercentReturns[name].Day1095Percent * day1095Weight * allocation;
 
-            double lastQuarterSentimentScore = marketSentiments[name].LastQuarter.SentimentScore * sentimentWeight * allocation;
+            double day30Score = percentReturn.Day30Percent * day30Weight * allocation;
+            double day90Score = percentReturn.Day90Percent * day90Weight * allocation;
+            double day365Score = percentReturn.Day365Percent * day365Weight * allocation;
+            double day1095Score = percentReturn.Day1095Percent * day1095Weight * allocation;
+            double rsiScore = percentReturn.RSI30 * RSIWeight * allocation;
+            double atrScore = percentReturn.ATR90 * ATRWeight * allocation * -1; // Punish high ATR.
+            double adlScore = percentReturn.ADLChange30 * ADLPercentWeight * allocation;
+
+            double lastQuarterSentimentScore = sentiment.LastQuarter.SentimentScore * quarterSentimentWeight * allocation;
+            double lastYearSentimentScore = sentiment.LastYear.SentimentScore * yearSentimentWeight * allocation;
 
             // bullGood is 1 if the sector is cyclical; otherwise, -1.
             int bullGood = CyclicalSectors.Contains(name) ? 1 : -1;
-            double marketCyclicalVsDefensiveScore = marketSentiments["General"].LastQuarter.SentimentScore * bullvsBearWeight * bullGood * allocation;
+            double marketCyclicalVsDefensiveScore = generalSentimentScore * bullvsBearWeight * bullGood * allocation;
 
-            double largeSectorScore = Math.Pow(allocation, 2) * largeSectorWeight * -1; // Punish too large allocations.
-            double smallSectorScore = Math.Pow(Math.Max(minAllocation - allocation, 0), 2) * smallSectorWeight * -1;
+            double largeSectorScore = allocation * allocation * largeSectorWeight * -1; // Punish too large allocations.
+            double unevenallocationScore = Math.Abs(allocation - 9.09) * -1 * UnevenAllocationWeight; // Punish allocations away from average
+            double allocationDiff = Math.Max(minAllocation - allocation, 0);
+            double smallSectorScore = allocationDiff * allocationDiff * smallSectorWeight * -1;
 
-            individual.Fitness += day30Score + day90Score + day365Score + day1095Score + lastQuarterSentimentScore + marketCyclicalVsDefensiveScore + largeSectorScore + smallSectorScore;
+            individual.Fitness += day30Score + day90Score + day365Score + day1095Score + lastQuarterSentimentScore + lastYearSentimentScore + marketCyclicalVsDefensiveScore + largeSectorScore + smallSectorScore + rsiScore + atrScore + adlScore + unevenallocationScore;
         }
 
         // Calculate HHI risk score.

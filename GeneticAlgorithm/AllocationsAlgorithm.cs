@@ -11,6 +11,7 @@ public class AllocationsAlgorithm : IAlgorithms<SectorAllocationModel> {
         var allocations = Enumerable.Range(0, sectorAllocation.SectorAllocationCount)
             .Select(_ => Random.Shared.NextDouble())
             .ToList();
+        sectorAllocation.id = Random.Shared.Next(0, 1000000); // Assign a random ID for the individual.
         sectorAllocation.SetAllocations(allocations);
         sectorAllocation.NormalizeVector();
         return sectorAllocation;

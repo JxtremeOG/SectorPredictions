@@ -8,15 +8,21 @@ public class SectorsTuneModel : IIndividual<SectorsTuneModel>{
         "day90Weight",
         "day365Weight",
         "day1095Weight",
-        "sentimentWeight",
+        "quarterSentimentWeight",
         "bullvsBearWeight",
         "largeSectorWeight",
         "smallSectorWeight",
         "hhiWeight",
         "sortinoRiskWeight",
-        "minAllocation"
-    };
+        "minAllocation",
+        "yearSentimentWeight",
+        "RSIWeight",
+        "ATRWeight",
+        "ADLPercentWeight",
+        "UnevenAllocationWeight",
 
+    };
+    public int id { get; set; } = 0;
     private List<double> Parameters { get; set; } = new List<double>();
     public double Fitness { get; set; } = 0.0;
     public int ParameterCount;

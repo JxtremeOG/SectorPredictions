@@ -1,13 +1,13 @@
 public class SectorTuner {
 
     private int tunePopulation = 500; //500
-    private double tuneMutation = 0.4;
+    private double tuneMutation = 0.2;
     private int tuneImmigrantCount = 10;
-    private int tuneGenerationCount = 100; //250
+    private int tuneGenerationCount = 500; //250
     private int population = 100; 
-    private double mutation = 0.4;
-    private int immigrantCount = 2;
-    private int generationCount = 10; //100
+    private double mutation = 0.2;
+    private int immigrantCount = 4;
+    private int generationCount = 100; //100
     private QuarterRangeRecord rangeStart = new QuarterRangeRecord { Quarter = "Q1", Year = "2021" }; //inclusive
     private QuarterRangeRecord rangeEnd = new QuarterRangeRecord { Quarter = "Q4", Year = "2024" }; //inclusive
     List<QuarterRangeRecord> testingQuarters = new List<QuarterRangeRecord> {

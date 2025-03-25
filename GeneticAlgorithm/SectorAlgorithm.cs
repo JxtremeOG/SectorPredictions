@@ -66,9 +66,10 @@ public class SectorAlgorithm : IAlgorithms<SectorsTuneModel>
         SectorsTuneModel sectorsTune = new SectorsTuneModel();
         sectorsTune.SetParameters(
             Enumerable.Range(0, sectorsTune.ParameterCount)
-                    .Select(_ => random.NextDouble() * 5)
+                    .Select(_ => Random.Shared.NextDouble() * 5)
                     .ToList()
         );
+        sectorsTune.id = Random.Shared.Next(0, 1000000); // Assign a random ID for the individual.
 
         return sectorsTune;
     }

@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
 // Define a generic interface that every individual must implement.
 public interface IIndividual<T>
 {
+    int id { get; set; }
     double Fitness { get; set; }
     T Clone();
 }
@@ -56,18 +58,38 @@ public class GeneticAlgorithmBase<T> where T : IIndividual<T>
 
     public async Task EvaluatePopulationAsync()
     {
-        // var tasks = Population.Select(individual => Task.Run(() =>
-        // {
-        //     individual.Fitness = 0;
-        //     EvaluateIndividual(individual);
-        // }));
-        // await Task.WhenAll(tasks);
-        foreach (T individual in Population)
+        if (typeof(T) == typeof(SectorsTuneModel))
         {
-            individual.Fitness = 0; // reset fitness
-            EvaluateIndividual(individual);
+            int maxConcurrency = 10; // set your desired concurrency limit here
+            using (var semaphore = new SemaphoreSlim(maxConcurrency))
+            {
+                var tasks = Population.Select(async individual =>
+                {
+                    await semaphore.WaitAsync();
+                    try
+                    {
+                        individual.Fitness = 0;
+                        EvaluateIndividual(individual);
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                });
+
+                await Task.WhenAll(tasks);
+            }
+        }
+        else
+        {
+            foreach (T individual in Population)
+            {
+                individual.Fitness = 0; // reset fitness
+                EvaluateIndividual(individual);
+            }
         }
     }
+
 
 
     public List<T> GetWeakestIndividuals(double fraction)
@@ -122,6 +144,8 @@ public class GeneticAlgorithmBase<T> where T : IIndividual<T>
         T currentBest = default;
         for (int generation = 0; generation < GenerationCount; generation++)
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             await EvaluatePopulationAsync();
 
             // Select top performers (e.g., top 30%).
@@ -132,10 +156,17 @@ public class GeneticAlgorithmBase<T> where T : IIndividual<T>
 
             currentBest = newPopulation.First();
 
-            if (typeof(T) == typeof(SectorsTuneModel)) //generation % 50 == 0 && 
+            if (typeof(T) == typeof(SectorsTuneModel))
             {
-                Console.WriteLine($"SectorsTuneModel | Generation: {generation}, Best Fitness: {currentBest.Fitness}");
+                var bestSectorsTuneModel = (SectorsTuneModel)(object)currentBest;
+                Console.WriteLine($"SectorsTuneModel | Generation: {generation}, Best Fitness: {bestSectorsTuneModel.Fitness}");
+                foreach (var weight in bestSectorsTuneModel.ToDict())
+                {
+                    Console.WriteLine($"{weight.Key}: {weight.Value}");
+                }
             }
+
+
 
             // Add a slice of weakest individuals.
             newPopulation.AddRange(GetWeakestIndividuals(0.05));
