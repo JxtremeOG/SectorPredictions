@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 // Define a generic interface that every individual must implement.
 public interface IIndividual<T>
 {
-    int id { get; set; }
+    string id { get; set; }
     double Fitness { get; set; }
     T Clone();
 }
@@ -148,8 +148,8 @@ public class GeneticAlgorithmBase<T> where T : IIndividual<T>
             sw.Start();
             await EvaluatePopulationAsync();
 
-            // Select top performers (e.g., top 30%).
-            int survivorsCount = (int)(PopulationSize * 0.3);
+            // Select top performers (e.g., top 10%).
+            int survivorsCount = (int)(PopulationSize * 0.10);
             List<T> newPopulation = Population.OrderByDescending(ind => ind.Fitness)
                                                 .Take(survivorsCount)
                                                 .ToList();

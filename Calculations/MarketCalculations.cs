@@ -226,11 +226,14 @@ public class MarketCalculations
         List<double> RSI30 = GetRelativeStrengthIndex(30);
         List<double> ATR90 = GetAverageTrueRange(90);
         List<double> ADLChange30 = GetADLChangePercent(30);
+        List<double> RSI90 = GetRelativeStrengthIndex(90);
+        List<double> ADLChange90 = GetADLChangePercent(90);
 
         for (int sectorIndex = 0; sectorIndex < SectorNames.Count; sectorIndex++)
         {
             string name = SectorNames[sectorIndex];
-            percentDict[name] = new SectorTechnicalMetricModel(day30[sectorIndex], day90[sectorIndex], day365[sectorIndex], day1095[sectorIndex], RSI30[sectorIndex], ATR90[sectorIndex], ADLChange30[sectorIndex]);
+            percentDict[name] = new SectorTechnicalMetricModel(day30[sectorIndex], day90[sectorIndex], day365[sectorIndex], day1095[sectorIndex], 
+            RSI30[sectorIndex], ATR90[sectorIndex], ADLChange30[sectorIndex], RSI90[sectorIndex], ADLChange90[sectorIndex]);
         }
         return percentDict;
     }

@@ -7,10 +7,29 @@ public class SectorsFitness {
     private readonly QuarterRangeRecord rangeEnd;
     private readonly List<QuarterRangeRecord> testingQuarters;
     private readonly List<QuarterRangeRecord> quarterRanges;
+    private Dictionary<string, double> GeneralMarketPerformance = new Dictionary<string, double> {
+        {"Q12021", 5.9},
+        {"Q22021", 8.35},
+        {"Q32021", 0.23},
+        {"Q42021", 10.96},
+        {"Q12022", -5.04},
+        {"Q22022", -15.93},
+        {"Q32022", -5.79},
+        {"Q42022", 6.42},
+        {"Q12023", 5.77},
+        {"Q22023", 9.93},
+        {"Q32023", -3.39},
+        {"Q42023", 10.98},
+        {"Q12024", 10.64},
+        {"Q22024", 4.13},
+        {"Q32024", 5.02},
+        {"Q42024", 2.8},
+    };
     private Dictionary<string, Tuple<Dictionary<string, SectorTechnicalMetricModel>, Dictionary<string, SectorSentimentModel>>> trainingData = 
         new Dictionary<string, Tuple<Dictionary<string, SectorTechnicalMetricModel>, Dictionary<string, SectorSentimentModel>>>();
     private Dictionary<string, MarketSectorResultModel> marketResults = 
         new Dictionary<string, MarketSectorResultModel>();
+    public Dictionary<string, double> TestedModels = new Dictionary<string, double>();
     public SectorsFitness(int tunePopulation, double tuneMutation, int tuneImmigrantCount, int tuneGenerationCount,
         QuarterRangeRecord rangeStart, QuarterRangeRecord rangeEnd, List<QuarterRangeRecord> testingQuarters) {
         this.tunePopulation = tunePopulation;
@@ -47,6 +66,10 @@ public class SectorsFitness {
         individual.Fitness = 0.0;
         QuarterRangeRecord lastQuarter = quarterRanges.Last();
         List<double> parameterWeights = individual.GetParameters();
+        if (TestedModels.ContainsKey(parameterWeights.ToString())) {
+            individual.Fitness = TestedModels[parameterWeights.ToString()];
+            return;
+        }
 
         foreach (QuarterRangeRecord quarter in this.quarterRanges) {
             if (testingQuarters.Contains(quarter)) { // skip testing quarters
@@ -110,14 +133,18 @@ public class SectorsFitness {
                         break;
                 }
             }
-            // if (fitness < 0) {
-            //     fitness = fitness * 1.5;
-            // }
+            
+            fitness = fitness - GeneralMarketPerformance[key]; //change return to be relative to market performance
+            if (fitness < 0) {
+                fitness *= 2; //penalize negative returns
+            }
+
             individual.Fitness += fitness;
             if (quarter == lastQuarter) {
                 Console.WriteLine($"SectorAllocationModel | {quarter.Quarter} {quarter.Year} | Individual Fitness: {individual.Fitness}");
             }
         }
+        TestedModels.Add(parameterWeights.ToString(), individual.Fitness);
         // Console.WriteLine($"SectorsTuneModel | Fitness: {individual.Fitness}");
     }
 }

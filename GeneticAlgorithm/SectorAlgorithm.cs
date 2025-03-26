@@ -21,8 +21,8 @@ public class SectorAlgorithm : IAlgorithms<SectorsTuneModel>
             double child1Allocation = randomTheta1 * parent1.GetParameters()[i] + (1 - randomTheta1) * parent2.GetParameters()[i];
             double child2Allocation = randomTheta2 * parent1.GetParameters()[i] + (1 - randomTheta2) * parent2.GetParameters()[i];
 
-            child1.AddParameter(child1Allocation);
-            child2.AddParameter(child2Allocation);
+            child1.AddParameter(Math.Round(child1Allocation, 5));
+            child2.AddParameter(Math.Round(child2Allocation, 5));
         }
 
         return new Tuple<SectorsTuneModel, SectorsTuneModel>(child1, child2);
@@ -32,6 +32,15 @@ public class SectorAlgorithm : IAlgorithms<SectorsTuneModel>
     {
         sectorsFitness.EvaluateIndividualFitness(individual);
     }
+
+    public void OptimizeWeights(SectorsTuneModel individual) {
+        List<double> parameters = individual.GetParameters();
+        for (int i = 0; i < parameters.Count; i++) {
+            double roundedValue = Math.Round(parameters[i], 5);
+            individual.AssignParameter(i, roundedValue);
+        }
+    }
+
 
     public void Mutate(SectorsTuneModel individual, double mutationChance)
     {
@@ -48,11 +57,8 @@ public class SectorAlgorithm : IAlgorithms<SectorsTuneModel>
                     double mutationFactor = 1 + ((random.NextDouble() - 0.5) * 0.2); // 0.2 gives +/-10%
                     double mutatedValue = parameters[i] * mutationFactor;
                     
-                    // Optional: Clamp mutatedValue to a valid range, e.g. 0 to 100.
-                    mutatedValue = Math.Max(0, Math.Min(mutatedValue, 100));
-                    
                     // Update the parameter with the mutated value.
-                    parameters[i] = mutatedValue;
+                    parameters[i] = Math.Round(mutatedValue, 5);
                 }
                 else {
                     parameters[i] = parameters[i] * -1;
@@ -71,10 +77,10 @@ public class SectorAlgorithm : IAlgorithms<SectorsTuneModel>
         SectorsTuneModel sectorsTune = new SectorsTuneModel();
         sectorsTune.SetParameters(
             Enumerable.Range(0, sectorsTune.ParameterCount)
-                    .Select(_ => Random.Shared.NextDouble() * 5 * (Random.Shared.NextDouble() < .9 ? 1 : -1))
+                    .Select(_ => Math.Round(Random.Shared.NextDouble() * 5 * (Random.Shared.NextDouble() < .9 ? 1 : -1), 5))
                     .ToList()
         );
-        sectorsTune.id = Random.Shared.Next(0, 1000000); // Assign a random ID for the individual.
+        sectorsTune.id = "SectorsTuneModel-"+DateTime.UtcNow.Ticks.ToString().Replace(".","")+"-"+Random.Shared.Next(0, 1000000).ToString(); // Assign a random ID for the individual.
 
         return sectorsTune;
     }

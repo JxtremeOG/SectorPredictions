@@ -16,13 +16,20 @@ public class SectorsTuneModel : IIndividual<SectorsTuneModel>{
         "sortinoRiskWeight",
         "minAllocation",
         "yearSentimentWeight",
-        "RSIWeight",
+        "RSI30DayWeight",
         "ATRWeight",
-        "ADLPercentWeight",
+        "ADL30DayPercentWeight",
         "UnevenAllocationWeight",
+        "ADL90DayPercentWeight",
+        "RSI90DayWeight",
+        "quarterToYearRatioWeight",
+        "RSI30to90DayRatioWeight",
+        "ADL30to90DayRatioWeight",
+        "percent30to90DayRatioWeight",
+        "ATR90ToPercentChangeWeight"
 
     };
-    public int id { get; set; } = 0;
+    public string id { get; set; } = "0";
     private List<double> Parameters { get; set; } = new List<double>();
     public double Fitness { get; set; } = 0.0;
     public int ParameterCount;
