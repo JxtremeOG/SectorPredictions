@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 public class SectorsFitness {
     private readonly int tunePopulation;
     private readonly double tuneMutation;
@@ -29,7 +30,7 @@ public class SectorsFitness {
         new Dictionary<string, Tuple<Dictionary<string, SectorTechnicalMetricModel>, Dictionary<string, SectorSentimentModel>>>();
     private Dictionary<string, MarketSectorResultModel> marketResults = 
         new Dictionary<string, MarketSectorResultModel>();
-    public Dictionary<string, double> TestedModels = new Dictionary<string, double>();
+    private ConcurrentDictionary<string, double> TestedModels = new ConcurrentDictionary<string, double>();
     public SectorsFitness(int tunePopulation, double tuneMutation, int tuneImmigrantCount, int tuneGenerationCount,
         QuarterRangeRecord rangeStart, QuarterRangeRecord rangeEnd, List<QuarterRangeRecord> testingQuarters) {
         this.tunePopulation = tunePopulation;
@@ -62,42 +63,49 @@ public class SectorsFitness {
         }
     }
 
-    public void EvaluateIndividualFitness(SectorsTuneModel individual) {
+    public void EvaluateIndividualFitness(SectorsTuneModel individual)
+    {
         individual.Fitness = 0.0;
         QuarterRangeRecord lastQuarter = quarterRanges.Last();
         List<double> parameterWeights = individual.GetParameters();
-        if (TestedModels.ContainsKey(parameterWeights.ToString())) {
-            individual.Fitness = TestedModels[parameterWeights.ToString()];
+        string paramKey = parameterWeights.ToString();
+
+        // Check if the fitness value is already computed in a thread-safe manner.
+        if (TestedModels.TryGetValue(paramKey, out double cachedFitness))
+        {
+            individual.Fitness = cachedFitness;
             return;
         }
 
-        foreach (QuarterRangeRecord quarter in this.quarterRanges) {
-            if (testingQuarters.Contains(quarter)) { // skip testing quarters
+        foreach (QuarterRangeRecord quarter in this.quarterRanges)
+        {
+            if (testingQuarters.Contains(quarter)) // skip testing quarters
+            {
                 continue;
             }
 
             string key = quarter.Quarter.ToString() + quarter.Year.ToString();
 
-            Dictionary<string, SectorTechnicalMetricModel> marketPercents = trainingData[key].Item1; // Dictionary<string, SectorPercentReturnsModel>
-            Dictionary<string, SectorSentimentModel> sentimentDict = trainingData[key].Item2; // Dictionary<string, SectorSentimentModel>
+            Dictionary<string, SectorTechnicalMetricModel> marketPercents = trainingData[key].Item1;
+            Dictionary<string, SectorSentimentModel> sentimentDict = trainingData[key].Item2;
             
             AllocationsFitness allocationsFitness = new AllocationsFitness(parameterWeights, marketPercents, sentimentDict);
-
             AllocationsAlgorithm allocationAlgorithm = new AllocationsAlgorithm(allocationsFitness);
 
             GeneticAlgorithmBase<SectorAllocationModel> allocationGeneticAlgorithm = new GeneticAlgorithmBase<SectorAllocationModel>(
-                tunePopulation, tuneMutation, tuneImmigrantCount, tuneGenerationCount, allocationAlgorithm.CreateRandomIndividual, allocationAlgorithm.EvaluateIndividual, 
+                tunePopulation, tuneMutation, tuneImmigrantCount, tuneGenerationCount, 
+                allocationAlgorithm.CreateRandomIndividual, allocationAlgorithm.EvaluateIndividual, 
                 allocationAlgorithm.Crossover, allocationAlgorithm.Mutate
             );
 
             SectorAllocationModel bestAllocation = allocationGeneticAlgorithm.Run().Result;
-
             MarketSectorResultModel quarterResults = marketResults[key];
 
             double fitness = 0;
             foreach (var allocation in bestAllocation.ToDict())
             {
-                switch (allocation.Key) {
+                switch (allocation.Key)
+                {
                     case "Technology":
                         fitness += quarterResults.TechnologyQuarterResult * allocation.Value;
                         break;
@@ -134,17 +142,23 @@ public class SectorsFitness {
                 }
             }
             
-            fitness = fitness - GeneralMarketPerformance[key]; //change return to be relative to market performance
-            if (fitness < 0) {
-                fitness *= 2; //penalize negative returns
+            // Adjust fitness relative to market performance.
+            fitness = fitness - GeneralMarketPerformance[key];
+            if (fitness < 0)
+            {
+                fitness *= 2; // penalize negative returns
             }
 
             individual.Fitness += fitness;
-            if (quarter == lastQuarter) {
+            if (quarter == lastQuarter)
+            {
                 Console.WriteLine($"SectorAllocationModel | {quarter.Quarter} {quarter.Year} | Individual Fitness: {individual.Fitness}");
             }
         }
-        TestedModels.Add(parameterWeights.ToString(), individual.Fitness);
+
+        // Try to add the computed fitness to the concurrent dictionary.
+        TestedModels.TryAdd(paramKey, individual.Fitness);
         // Console.WriteLine($"SectorsTuneModel | Fitness: {individual.Fitness}");
     }
+
 }
